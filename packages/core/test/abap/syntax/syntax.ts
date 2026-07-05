@@ -7379,6 +7379,20 @@ CLEAR r->*.`;
     expect(issues[0]?.getMessage()).to.equal(undefined);
   });
 
+  it("error, dereference on non-data-reference", () => {
+    const abap = `
+CLASS lcl DEFINITION.
+  PUBLIC SECTION.
+    DATA obj TYPE REF TO lcl.
+ENDCLASS.
+CLASS lcl IMPLEMENTATION.
+ENDCLASS.
+DATA o TYPE REF TO lcl.
+WRITE o->*.`;
+    const issues = runProgram(abap);
+    expect(issues[0]?.getMessage()).to.include("Not a data reference");
+  });
+
   it("loop USING KEY primary_key", () => {
     const abap = `
 DATA tab TYPE SORTED TABLE OF i WITH UNIQUE KEY table_line.
@@ -7777,6 +7791,16 @@ READ TABLE tab WITH KEY table_line->field = 2 TRANSPORTING NO FIELDS.`;
     const abap = `
 DATA tab TYPE STANDARD TABLE OF REF TO i WITH DEFAULT KEY.
 READ TABLE tab WITH KEY table_line->* = 2 TRANSPORTING NO FIELDS.`;
+    const issues = runProgram(abap);
+    expect(issues[0]?.getMessage()).to.equal(undefined);
+  });
+
+  it("ok, VALUE FOR WHERE with dereference reference, no exponential backtracking", () => {
+    const abap = `
+DATA tab TYPE STANDARD TABLE OF REF TO i WITH DEFAULT KEY.
+DATA res TYPE STANDARD TABLE OF i WITH DEFAULT KEY.
+DATA r TYPE REF TO i.
+res = VALUE #( for a in tab where ( table_line->* = r->* ) ( a->* ) ).`;
     const issues = runProgram(abap);
     expect(issues[0]?.getMessage()).to.equal(undefined);
   });
