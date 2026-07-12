@@ -9025,6 +9025,21 @@ ENDCLASS.`;
     expect(issues[0]?.getMessage()).to.equal(undefined);
   });
 
+  it("error, generic x returning parameter", () => {
+    const abap = `
+CLASS lcl DEFINITION.
+  PUBLIC SECTION.
+    METHODS byte RETURNING VALUE(rv_byte) TYPE x.
+ENDCLASS.
+CLASS lcl IMPLEMENTATION.
+  METHOD byte.
+  ENDMETHOD.
+ENDCLASS.`;
+    const issues = runProgram(abap);
+    expect(issues.length).to.equal(1);
+    expect(issues[0].getMessage()).to.equal("RETURNING parameter must be fully specified");
+  });
+
   it("ok, method structured returning", () => {
     const abap = `
 CLASS lcl DEFINITION.
@@ -12933,6 +12948,18 @@ SELECT * FROM t100
     expect(issues[0]?.getMessage()).to.equal(undefined);
   });
 
+  it("SELECT: INTO CORRESPONDING FIELDS OF TABLE with ranges, 702", () => {
+    const abap = `
+    DATA lr_carrid TYPE RANGE OF sflight-carrid.
+    DATA lt_result TYPE STANDARD TABLE OF sflight.
+    SELECT * FROM sflight INTO TABLE lt_result
+      WHERE carrid IN lr_carrid.`;
+    const reg = new Registry();
+    reg.addFile(new MemoryFile("zfoobar.prog.abap", abap));
+    const issues = run(reg, [], Version.v702);
+    expect(issues[0]?.getMessage()).to.equal(undefined);
+  });
+
   it("SELECT: ORDER BY DESCENDING in loop, cloud not okay", () => {
     const abap = `
 DATA row TYPE tadir.
@@ -14095,6 +14122,23 @@ lt_acc[ 1 ] = lt_acc[ 1 ] + byte_a * byte_b.
 ASSERT lt_acc[ 1 ] = 6.`;
     const issues = runProgram(abap);
     expect(issues[0]?.getMessage()).to.equal(undefined);
+  });
+
+  it("error, empty character literal for xstring parameter", () => {
+    const abap = `
+CLASS lcl DEFINITION.
+  PUBLIC SECTION.
+    METHODS moo IMPORTING bar TYPE xstring.
+ENDCLASS.
+
+CLASS lcl IMPLEMENTATION.
+  METHOD moo.
+    moo( '' ).      " expect error here
+    moo( 'AA' ).
+  ENDMETHOD.
+ENDCLASS.`;
+    const issues = runProgram(abap);
+    expect(issues.length).to.equal(1);
   });
 
 });
