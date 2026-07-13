@@ -4,7 +4,7 @@ import {MemoryFile} from "../../src/files/memory_file";
 import {Registry} from "../../src/registry";
 import {Downport} from "../../src/rules";
 import {Config} from "../../src/config";
-import {testRuleFixCount} from "./_utils";
+import {testRuleFixAll, testRuleFixCount} from "./_utils";
 import {IConfiguration} from "../../src/_config";
 import {Version} from "../../src/version";
 import {Issue} from "../../src/issue";
@@ -19,6 +19,10 @@ function buildConfig(version: Version): IConfiguration {
 
 function testFix(input: string, expected: string, extraFiles?: IFile[], count = 1, version = Version.v702) {
   testRuleFixCount(input, expected, new Downport(), buildConfig(version), extraFiles, false, count);
+}
+
+function testFixAll(input: string, expected: string, extraFiles?: IFile[], version = Version.v702) {
+  testRuleFixAll(input, expected, new Downport(), buildConfig(version), extraFiles);
 }
 
 async function findIssues(abap: string, version = Version.v702): Promise<readonly Issue[]> {
@@ -6077,6 +6081,22 @@ ENDCLASS.`;
     const issues = new Downport().initialize(reg).run(reg.getFirstObject()!);
     expect(issues.length).to.equal(1, "single issue expected");
     expect(issues[0].getDefaultFix()).to.not.equal(undefined);
+  });
+
+  it("SELECT, remove @ with voided types", async () => {
+    const abap = `DATA tab TYPE voided.
+DATA result TYPE voided.
+SELECT FROM sdfsdfsdf
+  FIELDS *
+  WHERE uname IN @tab
+  INTO CORRESPONDING FIELDS OF TABLE @result.`;
+    const expected = `DATA tab TYPE voided.
+DATA result TYPE voided.
+SELECT * FROM sdfsdfsdf INTO CORRESPONDING FIELDS OF TABLE result
+  
+  WHERE uname IN tab
+  .`;
+    testFixAll(abap, expected);
   });
 
 });

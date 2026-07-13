@@ -10406,6 +10406,16 @@ CONCATENATE char1 char2 INTO int.`;
     expect(issues[0]?.getMessage()).to.equal("Target type not compatible");
   });
 
+  it("concatenate, table expression not allowed", () => {
+    const abap = `
+DATA lt_current TYPE STANDARD TABLE OF string WITH DEFAULT KEY.
+DATA lv_joined TYPE string.
+CONCATENATE lt_current[ 1 ] lt_current[ 1 ] INTO lv_joined.`;
+    const issues = runProgram(abap);
+    expect(issues.length).to.equal(1);
+    expect(issues[0]?.getMessage()).to.equal("CONCATENATE with table expression not possible");
+  });
+
   it("constructor, ok, its a calculated value", () => {
     const abap = `
 CLASS lcl DEFINITION.
@@ -14139,6 +14149,25 @@ CLASS lcl IMPLEMENTATION.
 ENDCLASS.`;
     const issues = runProgram(abap);
     expect(issues.length).to.equal(1);
+  });
+
+  it("error, string concatenation not compatible with xsequence parameter", () => {
+    const abap = `
+CLASS lcl DEFINITION.
+  PUBLIC SECTION.
+    METHODS moo IMPORTING bar TYPE xsequence.
+ENDCLASS.
+
+CLASS lcl IMPLEMENTATION.
+  METHOD moo.
+    DATA var1 TYPE xstring.
+    DATA var2 TYPE xstring.
+    moo( var1 && var2 ).
+  ENDMETHOD.
+ENDCLASS.`;
+    const issues = runProgram(abap);
+    expect(issues.length).to.equal(1);
+    expect(issues[0]?.getMessage()).to.contain("not compatible");
   });
 
 });
