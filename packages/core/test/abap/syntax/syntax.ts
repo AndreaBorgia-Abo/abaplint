@@ -14170,4 +14170,48 @@ ENDCLASS.`;
     expect(issues[0]?.getMessage()).to.contain("not compatible");
   });
 
+  it("not possible: xstring offset/length in method parameter", () => {
+    const abap = `
+CLASS lcl DEFINITION.
+  PUBLIC SECTION.
+    METHODS foo IMPORTING bar TYPE xsequence.
+ENDCLASS.
+CLASS lcl IMPLEMENTATION.
+  METHOD foo.
+    DATA lv TYPE xstring.
+    foo( lv+1 ).
+    foo( lv(1) ).
+    foo( lv+1(1) ).
+  ENDMETHOD.
+ENDCLASS.`;
+    const issues = runProgram(abap);
+    expect(issues[0]?.getMessage()).to.contain('Offsets or lengths cannot be specified for fields of type "STRING" or "XSTRING" in the current statement');
+    expect(issues[1]?.getMessage()).to.contain('Offsets or lengths cannot be specified for fields of type "STRING" or "XSTRING" in the current statement');
+    expect(issues[2]?.getMessage()).to.contain('Offsets or lengths cannot be specified for fields of type "STRING" or "XSTRING" in the current statement');
+  });
+
+  it("possible, built in method", () => {
+    const abap = `
+DATA str TYPE string.
+WRITE / to_upper( str(4) ).`;
+    const issues = runProgram(abap);
+    expect(issues[0]?.getMessage()).to.equal(undefined);
+  });
+
+  it("okay if the value is calculated", () => {
+    const abap = `
+CLASS lcl DEFINITION.
+  PUBLIC SECTION.
+    METHODS foo IMPORTING bar TYPE clike.
+ENDCLASS.
+CLASS lcl IMPLEMENTATION.
+  METHOD foo.
+    DATA lv TYPE string.
+    foo( lv+1 && lv(1) ).
+  ENDMETHOD.
+ENDCLASS.`;
+    const issues = runProgram(abap);
+    expect(issues[0]?.getMessage()).to.equal(undefined);
+  });
+
 });
